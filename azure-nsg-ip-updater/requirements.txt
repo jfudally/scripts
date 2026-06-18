@@ -1,0 +1,8 @@
+azure-identity==1.19.0
+azure-mgmt-network==27.0.0
+requests==2.32.3
+
+# Dev/test
+pytest==8.3.4
+pytest-mock==3.14.0
+responses==0.25.3

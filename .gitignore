@@ -1,0 +1,24 @@
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Python caches / build artifacts
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secrets — never commit (defensive; project-level .gitignore also covers these)
+.env
+**/.env
+*.pem
