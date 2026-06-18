@@ -1,5 +1,7 @@
 # nsg-ip-updater
 
+[![CI](https://github.com/jfudally/scripts/actions/workflows/ci.yml/badge.svg)](https://github.com/jfudally/scripts/actions/workflows/ci.yml)
+
 Keep one or more Azure Network Security Group (NSG) security rules pointed
 at this host's *current* public IPv4. Designed to run from cron on a
 residential connection where the public IP rotates every few hours / days.
