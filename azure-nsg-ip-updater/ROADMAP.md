@@ -15,10 +15,13 @@ public IP.
 - [x] CLI entrypoint authenticated via Service Principal env vars.
 - [x] Sync multiple rules on one NSG in a single run (`AZURE_NSG_RULE_NAMES`,
       comma-separated; IP fetched once and applied to each).
+- [x] YAML config (`config.yaml`) listing rules across multiple NSGs and
+      resource groups in one subscription; replaces the
+      `AZURE_RESOURCE_GROUP` / `AZURE_NSG_NAME` / `AZURE_NSG_RULE_NAMES` env vars.
 - [x] Makefile + README + cron snippet.
 - [x] Unit tests with mocked SDK / mocked HTTP.
 
-Out of scope for Phase 1: IPv6, multiple NSGs, retries, notifications.
+Out of scope for Phase 1: IPv6, multiple subscriptions, retries, notifications.
 
 ## Phase 2 — Hardening
 - Retry/backoff on transient `azure.core.exceptions.HttpResponseError`s.
@@ -32,8 +35,8 @@ Out of scope for Phase 1: IPv6, multiple NSGs, retries, notifications.
 
 ## Phase 3 — Scale / Polish
 - IPv6 support (`source_address_prefixes` carrying both v4 and v6 entries).
-- Sync rules across multiple NSGs / resource groups (config file driven);
-  single-NSG multi-rule already shipped in Phase 1.
+- Multiple subscriptions (per-resource-group `subscription_id` in
+  `config.yaml`); multi-NSG / multi-resource-group already shipped in Phase 1.
 - Managed Identity auth path for when this runs on an Azure VM.
 - Container image + GitHub Actions release workflow.
 - Optional Storage Account / Key Vault / SQL Server firewall back-ends (the

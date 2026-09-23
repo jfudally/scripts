@@ -1,7 +1,9 @@
-"""nsg_ip_updater — keep an Azure NSG security rule pointed at this host's public IP.
+"""nsg_ip_updater — keep Azure NSG security rules pointed at this host's public IP.
 
-The package is intentionally small and split into three layers:
+The package is intentionally small and split into layers:
 
+* :mod:`config` — loads the YAML file listing which rules to sync, grouped by
+  resource group and NSG, and flattens it into (rg, nsg, rule) targets.
 * :mod:`public_ip` — fetches the host's current public IPv4 from a list of
   external echo services, tolerating individual outages.
 * :mod:`nsg_client` — a thin wrapper over ``azure-mgmt-network`` so the rest

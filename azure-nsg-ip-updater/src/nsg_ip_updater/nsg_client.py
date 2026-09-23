@@ -95,6 +95,16 @@ class NSGRuleClient:
         """
         return self._rule_name
 
+    @property
+    def label(self) -> str:
+        """Path-like ``rg/nsg/rule`` identifier for logs and results.
+
+        Rule names are only unique within one NSG, so when rules from several
+        NSGs / resource groups are reconciled together the bare rule name is
+        ambiguous; this label is not.
+        """
+        return f"{self._resource_group}/{self._nsg_name}/{self._rule_name}"
+
     def _get_rule(self) -> Any:
         try:
             return self._client.security_rules.get(

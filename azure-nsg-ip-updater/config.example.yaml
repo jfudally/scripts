@@ -1,0 +1,21 @@
+# Which NSG security rules to keep pointed at this host's public IP.
+# Copy to config.yaml (gitignored) and edit. Credentials do NOT go here —
+# they stay in .env.
+#
+# Rules are grouped by resource group, then NSG. Every resource group must be
+# in the subscription named by AZURE_SUBSCRIPTION_ID. The public IP is fetched
+# once per run and applied to every rule listed below; a failing rule is
+# logged and skipped without blocking the rest.
+resource_groups:
+  - name: my-rg
+    nsgs:
+      - name: my-nsg
+        rules:
+          - allow-home-ssh
+          - allow-home-https
+
+  - name: my-other-rg
+    nsgs:
+      - name: my-other-nsg
+        rules:
+          - allow-home-rdp

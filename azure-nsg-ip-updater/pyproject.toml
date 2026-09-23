@@ -1,7 +1,7 @@
 [project]
 name = "nsg-ip-updater"
 version = "0.1.0"
-description = "Keep an Azure NSG security rule pointed at this host's current public IP."
+description = "Keep Azure NSG security rules (across resource groups) pointed at this host's current public IP."
 requires-python = ">=3.13"
 
 [build-system]

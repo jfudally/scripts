@@ -9,3 +9,5 @@ build/
 dist/
 .coverage
 htmlcov/
+# Host-specific rule config; config.example.yaml is the committed template.
+config.yaml

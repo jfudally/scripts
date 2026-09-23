@@ -42,6 +42,17 @@ def test_rule_name_is_exposed() -> None:
     assert client.rule_name == "allow-home"
 
 
+def test_label_identifies_resource_group_nsg_and_rule() -> None:
+    """The label disambiguates identically named rules on different NSGs."""
+    client = NSGRuleClient(
+        network_client=MagicMock(),
+        resource_group="rg",
+        nsg_name="nsg",
+        rule_name="allow-home",
+    )
+    assert client.label == "rg/nsg/allow-home"
+
+
 def test_get_current_source_prefix_returns_single_prefix() -> None:
     """If the rule uses source_address_prefix, that string is returned verbatim."""
     sdk = MagicMock()

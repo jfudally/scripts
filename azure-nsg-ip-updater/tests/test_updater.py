@@ -19,10 +19,10 @@ from nsg_ip_updater.updater import (
 )
 
 
-def _client(rule_name: str, current_prefix: str | None) -> MagicMock:
-    """Build a mock NSG client that reports *current_prefix* for *rule_name*."""
+def _client(label: str, current_prefix: str | None) -> MagicMock:
+    """Build a mock NSG client that reports *current_prefix* for the rule at *label*."""
     client = MagicMock()
-    client.rule_name = rule_name
+    client.label = label
     client.get_current_source_prefix.return_value = current_prefix
     return client
 
@@ -34,7 +34,7 @@ def test_reconcile_no_update_when_ip_unchanged() -> None:
     result = reconcile_rule(nsg, "1.2.3.4")
 
     assert result == UpdateResult(
-        rule_name="dns",
+        target="dns",
         changed=False,
         old_prefix="1.2.3.4/32",
         new_prefix="1.2.3.4/32",
@@ -51,7 +51,7 @@ def test_reconcile_updates_when_ip_changed() -> None:
 
     nsg.update_source_prefix.assert_called_once_with("9.8.7.6/32")
     assert result.changed is True
-    assert result.rule_name == "dns"
+    assert result.target == "dns"
     assert result.old_prefix == "1.2.3.4/32"
     assert result.new_prefix == "9.8.7.6/32"
     assert result.public_ip == "9.8.7.6"
@@ -81,7 +81,7 @@ def test_sync_fetches_public_ip_exactly_once_for_many_rules() -> None:
     results = sync_nsg_rules_with_current_ip(clients, fetch_ip)
 
     fetch_ip.assert_called_once_with()
-    assert [r.rule_name for r in results] == ["dns", "ssh", "https"]
+    assert [r.target for r in results] == ["dns", "ssh", "https"]
     # dns already current → no write; the other two change.
     assert [r.changed for r in results] == [False, True, True]
     assert all(r.error is None for r in results)
@@ -102,7 +102,7 @@ def test_sync_continues_when_a_rule_fails() -> None:
     results = sync_nsg_rules_with_current_ip(clients, fetch_ip)
 
     fetch_ip.assert_called_once_with()
-    assert [r.rule_name for r in results] == ["dns", "ssh", "https"]
+    assert [r.target for r in results] == ["dns", "ssh", "https"]
     # The healthy rules either side of the failure were still updated.
     good_before.update_source_prefix.assert_called_once_with("9.8.7.6/32")
     good_after.update_source_prefix.assert_called_once_with("9.8.7.6/32")
@@ -114,3 +114,12 @@ def test_sync_continues_when_a_rule_fails() -> None:
     assert ssh.changed is False
     assert ssh.error is not None
     assert "boom" in ssh.error
+
+
+def test_sync_labels_results_by_full_rule_path() -> None:
+    """Same rule name on different NSGs yields distinguishable results."""
+    clients = [_client("rg-a/nsg/ssh", None), _client("rg-b/nsg/ssh", None)]
+
+    results = sync_nsg_rules_with_current_ip(clients, MagicMock(return_value="9.8.7.6"))
+
+    assert [r.target for r in results] == ["rg-a/nsg/ssh", "rg-b/nsg/ssh"]

@@ -4,8 +4,9 @@ This module is deliberately framework-free: it accepts callables and client
 objects so unit tests can run without touching the network. The CLI in
 :mod:`cli` is responsible for wiring the real implementations in.
 
-A single host has exactly one public IP, so when several NSG rules must all
-point at this host the IP is fetched once and applied to every rule. See
+A single host has exactly one public IP, so when several NSG rules (possibly
+spread across NSGs and resource groups) must all point at this host the IP is
+fetched once and applied to every rule. See
 :func:`sync_nsg_rules_with_current_ip`.
 """
 from __future__ import annotations
@@ -22,8 +23,9 @@ class UpdateResult:
     """Outcome of reconciling one NSG rule.
 
     Attributes:
-        rule_name: Name of the security rule this result describes. Lets the
-            caller attribute outcomes when several rules are synced at once.
+        target: Label of the security rule this result describes, as
+            ``resource_group/nsg/rule``. Lets the caller attribute outcomes when
+            rules from several NSGs / resource groups are synced at once.
         changed: True when the NSG rule was rewritten this run. Always False
             when ``error`` is set.
         old_prefix: The rule's source prefix before reconciliation
@@ -38,7 +40,7 @@ class UpdateResult:
             still attempted — see :func:`sync_nsg_rules_with_current_ip`.
     """
 
-    rule_name: str
+    target: str
     changed: bool
     old_prefix: str | None
     new_prefix: str | None
@@ -55,7 +57,7 @@ def reconcile_rule(nsg_client, public_ip: str) -> UpdateResult:
     the script safe to run from cron every few minutes.
 
     Args:
-        nsg_client: An object exposing ``rule_name``,
+        nsg_client: An object exposing ``label``,
             ``get_current_source_prefix()`` and ``update_source_prefix(str)``.
             In production this is an
             :class:`nsg_ip_updater.nsg_client.NSGRuleClient`; tests pass a mock.
@@ -67,16 +69,16 @@ def reconcile_rule(nsg_client, public_ip: str) -> UpdateResult:
     """
     desired_prefix = f"{public_ip}/32"
     current_prefix = nsg_client.get_current_source_prefix()
-    rule_name = nsg_client.rule_name
+    target = nsg_client.label
 
     if current_prefix == desired_prefix:
         logger.info(
             "NSG rule %s already matches public IP %s; no update needed",
-            rule_name,
+            target,
             public_ip,
         )
         return UpdateResult(
-            rule_name=rule_name,
+            target=target,
             changed=False,
             old_prefix=current_prefix,
             new_prefix=current_prefix,
@@ -85,13 +87,13 @@ def reconcile_rule(nsg_client, public_ip: str) -> UpdateResult:
 
     logger.info(
         "NSG rule %s source changing: %s -> %s",
-        rule_name,
+        target,
         current_prefix if current_prefix is not None else "<unset>",
         desired_prefix,
     )
     nsg_client.update_source_prefix(desired_prefix)
     return UpdateResult(
-        rule_name=rule_name,
+        target=target,
         changed=True,
         old_prefix=current_prefix,
         new_prefix=desired_prefix,
@@ -141,11 +143,11 @@ def sync_nsg_rules_with_current_ip(
         except Exception as exc:  # noqa: BLE001 -- isolate one rule's failure
             logger.exception(
                 "reconciliation failed for NSG rule %s; continuing with others",
-                client.rule_name,
+                client.label,
             )
             results.append(
                 UpdateResult(
-                    rule_name=client.rule_name,
+                    target=client.label,
                     changed=False,
                     old_prefix=None,
                     new_prefix=None,
