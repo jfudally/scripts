@@ -73,12 +73,21 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
 
 
 def _configure_logging() -> None:
-    """Stream INFO+ logs to stderr with a cron-friendly timestamped format."""
+    """Stream INFO+ logs to stderr with a cron-friendly timestamped format.
+
+    Side effect: pins the ``azure`` logger (and so every Azure SDK child
+    logger) to WARNING.
+    """
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
         stream=sys.stderr,
     )
+    # azure-core's HttpLoggingPolicy logs every request/response, headers
+    # included, at INFO. Run every 15 minutes from cron, that buried our own
+    # one-line results and grew the log by tens of MB. SDK warnings and
+    # errors still get through.
+    logging.getLogger("azure").setLevel(logging.WARNING)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
