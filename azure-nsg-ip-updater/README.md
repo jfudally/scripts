@@ -144,6 +144,9 @@ INFO ... updated NSG rule my-other-rg/my-other-nsg/allow-home-rdp: 198.51.100.5/
 Re-running immediately should log "already current" for every rule and exit
 0 without an Azure write.
 
+Azure SDK loggers (`azure.*`) are pinned to WARNING, so the SDK's per-request
+HTTP header dumps stay out of the log. SDK warnings and errors still show up.
+
 ## Cron
 
 Edit `crontab -e` and add (adjust paths):

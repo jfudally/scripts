@@ -9,6 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import logging
+
 import pytest
 
 from nsg_ip_updater import cli
@@ -134,3 +136,24 @@ def test_one_failing_rule_exits_2_but_others_still_update(
 
     assert cli.main(["--config", str(_write_config(tmp_path))]) == 2
     assert _written_targets(azure) == [("rg-a", "nsg-1", "ssh"), ("rg-b", "nsg-2", "ssh")]
+
+
+def test_configure_logging_quiets_azure_sdk() -> None:
+    """The Azure SDK's HTTP logging policy dumps full request/response headers
+    at INFO; on a 15-minute cron that bloated the log to tens of MB. Logging
+    setup must pin the ``azure`` logger to WARNING so only real problems show.
+    """
+    azure_logger = logging.getLogger("azure")
+    original_level = azure_logger.level
+    try:
+        cli._configure_logging()
+
+        assert azure_logger.level == logging.WARNING
+        # Child loggers (e.g. the HTTP logging policy) inherit the threshold.
+        http_policy = logging.getLogger("azure.core.pipeline.policies.http_logging_policy")
+        assert not http_policy.isEnabledFor(logging.INFO)
+        assert http_policy.isEnabledFor(logging.WARNING)
+    finally:
+        # setLevel (not attribute assignment) also clears logging's
+        # isEnabledFor cache, so other tests see the original level.
+        azure_logger.setLevel(original_level)
